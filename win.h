@@ -28,16 +28,15 @@ class MyComboBox : public wxOwnerDrawnComboBox {
     size_t nGroups;
 
     void OnDrawItem (wxDC &dc, const wxRect &rect, int item, int flags) const override;
-    void OnComboBox(wxCommandEvent&);
-    void OnDropdown(wxCommandEvent&);
+    void OnDrawBackground(wxDC &dc, const wxRect &rect, int item, int flags) const override;
+    void OnComboBox(wxCommandEvent &event);
+    void OnDropdown(wxCommandEvent &event);
     wxCoord OnMeasureItem(size_t n) const override;
 
-    void OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int flags) const override;
-
 public:
-    MyComboBox(wxWindow *, wxWindowID, MyFrame *);
+    MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *frame);
     ~MyComboBox(void);
-    void refresh();
+    void update(void);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -50,21 +49,21 @@ class MyFrame : public wxFrame {
     wxCheckBox *cbMultiline, *cbERE, *cbNL, *cbICase;
     wxVector<wxColor> colors;
     Reggy reggy;
-    bool isRefreshing;
+    bool isUpdating;
 
-    void OnBtnClear(wxCommandEvent&);
-    void OnBtnLoad(wxCommandEvent&);
-    void OnBtnSave(wxCommandEvent&);
-    void OnBtnQuit(wxCommandEvent&);
-    void OnChangePtrn(wxCommandEvent&);
-    void OnChangeData(wxCommandEvent&);
-    void OnCheckbox(wxCommandEvent&);
+    void OnBtnClear(wxCommandEvent &event);
+    void OnBtnLoad(wxCommandEvent &event);
+    void OnBtnSave(wxCommandEvent &event);
+    void OnBtnQuit(wxCommandEvent &event);
+    void OnChangePtrn(wxCommandEvent &event);
+    void OnChangeData(wxCommandEvent &event);
+    void OnCheckbox(wxCommandEvent &event);
 
 public:
     MyComboBox *comGroups;
     MyFrame(void);
     ~MyFrame(void);
-    void refresh(void);
+    void update(void);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -75,7 +74,7 @@ public:
     MyApp(void);
     ~MyApp(void);
 
-    virtual bool OnInit() override;
+    virtual bool OnInit(void) override;
     // int FilterEvent(wxEvent&) override;
 };
 

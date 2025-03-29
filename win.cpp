@@ -1,7 +1,5 @@
 #include "win.h"
 
-wxIMPLEMENT_APP(MyApp);
-
 BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(ID_BTN_LOAD, MyFrame::OnBtnLoad)
     EVT_BUTTON(ID_BTN_SAVE, MyFrame::OnBtnSave)
@@ -42,7 +40,7 @@ void MyComboBox::OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int fl
 }
 
 
-void MyComboBox::refresh()
+void MyComboBox::update()
 {
     if (nGroups != mainFrame->reggy.getGroupCount()) {
         for (; nGroups < mainFrame->reggy.getGroupCount(); ++nGroups) {
@@ -62,7 +60,7 @@ void MyComboBox::OnComboBox(wxCommandEvent& event)
 {
     size_t group = (GetSelection() == wxNOT_FOUND || GetSelection() == 0) ? Reggy::NO_GROUP : (GetSelection() - 1);
     mainFrame->reggy.setPriority(group);
-    mainFrame->refresh();
+    mainFrame->update();
     event.Skip();
 }
 
@@ -74,6 +72,7 @@ void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) cons
 
     if (item > 0) {
         wxRect rect = r;
+        rect.SetLeft(rect.GetLeft() + 1);
         rect.SetTop(rect.GetTop() + 1);
         rect.SetBottom(rect.GetBottom() - 2);
         rect.SetRight(rect.GetLeft() + 48);
@@ -101,7 +100,7 @@ void MyComboBox::OnDropdown(wxCommandEvent& event)
 
 // ----- MyFrame ---------
 
-MyFrame::MyFrame() : isRefreshing(false), reggy(0),
+MyFrame::MyFrame() : isUpdating(false), reggy(0),
   wxFrame(nullptr, wxID_ANY, "Reggy, the POSIX BRE/ERE Companion", wxPoint(100,100), wxSize(800, 600))
 {
     colors.push_back(*wxLIGHT_GREY);
@@ -161,11 +160,11 @@ MyFrame::MyFrame() : isRefreshing(false), reggy(0),
 
 MyFrame::~MyFrame() {}
 
-void MyFrame::refresh()
+void MyFrame::update()
 {
     SetStatusText(!reggy.isReady() ? wxString(reggy.getErrorString()) : wxT(""), 0);
 
-    isRefreshing = true;
+    isUpdating = true;
     auto cursor = inpData->GetCaretPosition();
     wxString s = inpData->GetValue();
     inpData->Clear();
@@ -196,23 +195,23 @@ void MyFrame::refresh()
             pos += reggy.getStopLen(i++);
         }
     }
-    comGroups->refresh();
+    comGroups->update();
     inpData->SetCaretPosition(cursor);
-    isRefreshing = false;
+    isUpdating = false;
 }
 
 void MyFrame::OnChangePtrn(wxCommandEvent& event)
 {
     reggy.setPattern(std::string(inpPattern->GetValue()));
-    refresh();
+    update();
     event.Skip();
 }
 
 void MyFrame::OnChangeData(wxCommandEvent& event)
 {
-    if (!isRefreshing) {
+    if (!isUpdating) {
         reggy.setData(std::string(inpData->GetValue()));
-        refresh();
+        update();
     }
     event.Skip();
 }
@@ -329,10 +328,10 @@ void MyFrame::OnCheckbox(wxCommandEvent& event)
                 cbNL->Enable();
             else
                 cbNL->Disable();
-            refresh();
+            update();
             break;
     }
-    refresh();
+    update();
     event.Skip();
 }
 
@@ -349,3 +348,5 @@ bool MyApp::OnInit()
 
     return true;
 }
+
+wxIMPLEMENT_APP(MyApp);
