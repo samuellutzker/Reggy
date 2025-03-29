@@ -21,6 +21,84 @@ BEGIN_EVENT_TABLE(MyComboBox, wxOwnerDrawnComboBox)
     EVT_COMBOBOX_CLOSEUP(ID_CO_GROUPS, MyComboBox::OnDropdown)
 END_EVENT_TABLE()
 
+// ----- MyComboBox ----
+
+MyComboBox::MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *_mainFrame) : nGroups(0), mainFrame(_mainFrame),
+  wxOwnerDrawnComboBox(parent, id, "Total Groups: 0", wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY)
+{
+    Append("Total Groups: 0");
+    SetCursor(wxCURSOR_HAND);
+}
+
+MyComboBox::~MyComboBox() {}
+
+void MyComboBox::OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int flags) const
+{
+    bool highlight = IsPopupShown() && GetSelection() == item;
+
+    dc.SetBrush(highlight ? *wxLIGHT_GREY_BRUSH : *wxWHITE_BRUSH);
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.DrawRectangle(rect);
+}
+
+
+void MyComboBox::refresh()
+{
+    if (nGroups != mainFrame->reggy.getGroupCount()) {
+        for (; nGroups < mainFrame->reggy.getGroupCount(); ++nGroups) {
+            Append("Group #" + std::to_string(nGroups));
+        }
+        for (; nGroups > mainFrame->reggy.getGroupCount(); --nGroups) {
+            Delete(nGroups - 1);
+        }
+
+        Select(0);
+        mainFrame->reggy.setPriority(Reggy::NO_GROUP);
+        SetString(0, wxString("Total Groups: " + std::to_string(nGroups)));
+    }
+}
+
+void MyComboBox::OnComboBox(wxCommandEvent& event) 
+{
+    size_t group = (GetSelection() == wxNOT_FOUND || GetSelection() == 0) ? Reggy::NO_GROUP : (GetSelection() - 1);
+    mainFrame->reggy.setPriority(group);
+    mainFrame->refresh();
+    event.Skip();
+}
+
+void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) const
+{
+    if (item == wxNOT_FOUND) return;
+
+    wxPoint p = r.GetTopLeft() + wxPoint(4,4);
+
+    if (item > 0) {
+        wxRect rect = r;
+        rect.SetTop(rect.GetTop() + 1);
+        rect.SetBottom(rect.GetBottom() - 2);
+        rect.SetRight(rect.GetLeft() + 48);
+    
+        wxColor bgColor = item > 0 ? mainFrame->colors[item-1] : GetBackgroundColour();
+        dc.SetBrush(wxBrush(bgColor));
+        dc.SetPen(wxPen(*wxBLACK));
+        dc.DrawRectangle(rect);
+        p += wxPoint(48, 0);
+    }
+    dc.SetTextForeground(*wxBLACK);
+    dc.DrawText(GetString(item), p);
+}
+
+wxCoord MyComboBox::OnMeasureItem(size_t n) const
+{
+    return 26;
+}
+
+void MyComboBox::OnDropdown(wxCommandEvent& event)
+{
+    wxSetCursor(event.GetEventType() == wxEVT_COMBOBOX_DROPDOWN ? wxCURSOR_HAND : wxNullCursor);
+    event.Skip();
+}
+
 // ----- MyFrame ---------
 
 MyFrame::MyFrame() : isRefreshing(false), reggy(0),
@@ -35,8 +113,8 @@ MyFrame::MyFrame() : isRefreshing(false), reggy(0),
     wxPanel *ctrlPanel          = new wxPanel(this);
     wxBoxSizer *ctrlSizer       = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *opSizer         = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* flagSizer       = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* mainSizer       = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer *flagSizer       = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer *mainSizer       = new wxBoxSizer(wxVERTICAL);
 
     // Create controls and inputs
     inpPattern  = new wxTextCtrl(ctrlPanel, ID_INP_PTRN, wxEmptyString);
@@ -181,7 +259,7 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     if (result) {
         inpData->SetValue(wxString(YAJL_GET_STRING(result)));
     } else {
-        wxLogDebug("No pattern found.");
+        wxLogDebug("No data found.");
     }
 
     yajl_tree_free(node);
@@ -255,83 +333,6 @@ void MyFrame::OnCheckbox(wxCommandEvent& event)
             break;
     }
     refresh();
-    event.Skip();
-}
-
-// ----- MyComboBox ----
-
-MyComboBox::MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *_mainFrame) : nGroups(0), mainFrame(_mainFrame),
-  wxOwnerDrawnComboBox(parent, id, "Total Groups: 0", wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY)
-{
-    Append("Total Groups: 0");
-    SetCursor(wxCURSOR_HAND);
-}
-
-MyComboBox::~MyComboBox() {}
-
-void MyComboBox::OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int flags) const
-{
-    if (IsPopupShown() && GetSelection() == item) {
-        dc.SetBrush(*wxLIGHT_GREY_BRUSH);
-        dc.SetPen(*wxTRANSPARENT_PEN);
-        dc.DrawRectangle(rect);
-    }
-}
-
-
-void MyComboBox::refresh()
-{
-    if (nGroups != mainFrame->reggy.getGroupCount()) {
-        for (; nGroups < mainFrame->reggy.getGroupCount(); ++nGroups) {
-            Append("Group #" + std::to_string(nGroups));
-        }
-        for (; nGroups > mainFrame->reggy.getGroupCount(); --nGroups) {
-            Delete(nGroups-1);
-        }
-
-        Select(0);
-        SetString(0, wxString("Total Groups: " + std::to_string(nGroups)));
-    }
-}
-
-void MyComboBox::OnComboBox(wxCommandEvent& event) 
-{
-    size_t group = (GetSelection() == wxNOT_FOUND || GetSelection() == 0) ? Reggy::NO_GROUP : (GetSelection() - 1);
-    mainFrame->reggy.setPriority(group);
-    mainFrame->refresh();
-    event.Skip();
-}
-
-void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) const
-{
-    if (item == wxNOT_FOUND) return;
-
-    wxPoint p = r.GetTopLeft() + wxPoint(4,4);
-
-    if (item > 0) {
-        wxRect rect = r;
-        rect.SetTop(rect.GetTop() + 1);
-        rect.SetBottom(rect.GetBottom() - 2);
-        rect.SetRight(rect.GetLeft() + 48);
-    
-        wxColor bgColor = item > 0 ? mainFrame->colors[item-1] : GetBackgroundColour();
-        dc.SetBrush(wxBrush(bgColor));
-        dc.SetPen(wxPen(*wxBLACK));
-        dc.DrawRectangle(rect);
-        p += wxPoint(48, 0);
-    }
-    dc.SetTextForeground(*wxBLACK);
-    dc.DrawText(GetString(item), p);
-}
-
-wxCoord MyComboBox::OnMeasureItem(size_t n) const
-{
-    return 26;
-}
-
-void MyComboBox::OnDropdown(wxCommandEvent& event)
-{
-    wxSetCursor(event.GetEventType() == wxEVT_COMBOBOX_DROPDOWN ? wxCURSOR_HAND : wxNullCursor);
     event.Skip();
 }
 
