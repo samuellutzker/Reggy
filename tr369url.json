@@ -1,0 +1,1 @@
+{"pattern":"^((ws|wss|mqtt):\\/\\/)?(([-a-zA-Z0-9%._+~#=]+)(:([-a-zA-Z0-9%._+~#=:]+))?@)?([-a-zA-Z0-9%._+~#=]{2,255}\\.[a-z]{2,6})(:([0-9]{1,5}))?(\\/[-a-zA-Z0-9@:%_+.~#&\\/=]*)*($|\\?)","data":"wss://samuel:p4ssw0rd@wss1.my-url.com:9876/hallo/w3lt?option1=1&option2=2\nmqtt://web.de\nws://abc.de:1234/\nabc.de\na.de\nwhat.the:1234/deuce?yo\nk0m1sch3s:p4_%20w0rd@yo.de\n","flags":1}
