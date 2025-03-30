@@ -115,9 +115,10 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     wxBoxSizer *opSizer         = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *flagSizer       = new wxBoxSizer(wxHORIZONTAL);
     wxBoxSizer *mainSizer       = new wxBoxSizer(wxVERTICAL);
+    wxStaticBoxSizer *decoSizer = new wxStaticBoxSizer(wxHORIZONTAL, ctrlPanel, "Regex Pattern");
 
     // Create controls and inputs
-    inpPattern  = new wxTextCtrl(ctrlPanel, ID_INP_PTRN, wxEmptyString);
+    inpPattern  = new wxTextCtrl(decoSizer->GetStaticBox(), ID_INP_PTRN, wxEmptyString);
     inpData     = new wxRichTextCtrl(this, ID_INP_DATA, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER  | wxTE_MULTILINE);
     btnLoad     = new wxButton(ctrlPanel, ID_BTN_LOAD, wxString("Load"));
     btnSave     = new wxButton(ctrlPanel, ID_BTN_SAVE, wxString("Save"));
@@ -145,9 +146,8 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     flagSizer->Add(cbICase, 0, wxCENTER | wxALL, 5);
     flagSizer->Add(cbNL, 0, wxCENTER | wxALL, 5);
 
-    wxStaticBoxSizer *box = new wxStaticBoxSizer(wxHORIZONTAL, ctrlPanel, "Regex Pattern");
-    box->Add(inpPattern, 1, wxEXPAND | wxALL, 5);
-    ctrlSizer->Add(box, 1, wxEXPAND | wxALL, 5);
+    decoSizer->Add(inpPattern, 1, wxEXPAND | wxALL, 5);
+    ctrlSizer->Add(decoSizer, 1, wxEXPAND | wxALL, 5);
     ctrlSizer->Add(opSizer, 0, wxEXPAND | wxALL, 5);
     ctrlSizer->Add(flagSizer, 0, wxEXPAND | wxALL, 5);
     ctrlPanel->SetSizer(ctrlSizer);
