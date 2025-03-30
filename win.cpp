@@ -253,21 +253,27 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
         inpData->SetValue(jsonSrc);
         return;
     }
-    yajl_val result = yajl_tree_get(node, (const char *[]){"pattern", (const char *)0}, yajl_t_string);
+
+    const char *pattern_path[] = {"pattern", (const char *)0};
+    const char *data_path[] = {"data", (const char *)0};
+    const char *flags_path[] = {"flags", (const char *)0};
+    const char *ml_path[] = {"multiline", (const char *)0};
+
+    yajl_val result = yajl_tree_get(node, pattern_path, yajl_t_string);
     if (result) {
         inpPattern->SetValue(wxString(YAJL_GET_STRING(result)));
     } else {
         wxLogDebug("No pattern found.");
     }
 
-    result = yajl_tree_get(node, (const char *[]){"data", (const char *)0}, yajl_t_string);
+    result = yajl_tree_get(node, data_path, yajl_t_string);
     if (result) {
         inpData->SetValue(wxString(YAJL_GET_STRING(result)));
     } else {
         wxLogDebug("No data found.");
     }
 
-    result = yajl_tree_get(node, (const char *[]){"flags", (const char *)0}, yajl_t_number);
+    result = yajl_tree_get(node, flags_path, yajl_t_number);
     if (result) {
         int flags = YAJL_GET_INTEGER(result);
         cbERE->SetValue((flags & REG_EXTENDED) != 0);
@@ -277,7 +283,8 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     } else {
         wxLogDebug("No flags found.");
     }
-    result = yajl_tree_get(node, (const char *[]){"multiline", (const char *)0}, yajl_t_true);
+
+    result = yajl_tree_get(node, ml_path, yajl_t_true);
     cbMultiline->SetValue(YAJL_IS_TRUE(result));
     reggy.setMultiline(YAJL_IS_TRUE(result));
 
