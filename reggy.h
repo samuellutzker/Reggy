@@ -3,10 +3,25 @@
 #include <vector>
 
 class Reggy {
-public:
-    Reggy(int flags);
+    int flags;
+    bool ok;
+    bool multiline;
+    regex_t re;
+    size_t priority;
+    size_t nGroups, nMatches;
+    std::string error;
+    std::string pattern;
+    std::string data;
+    std::vector<regmatch_t> matches;
+    std::vector<size_t> stopLen;
+    std::vector<size_t> primaryGroup;
 
+    bool recompile();
+
+public:
     inline static constexpr size_t NO_GROUP = (size_t)-1;
+
+    Reggy(int flags);
 
     bool setFlag(int, bool, bool recalc = true);
     bool setFlags(int, bool recalc = true);
@@ -24,20 +39,4 @@ public:
     size_t getPrimaryGroup(size_t stop) const;
     size_t getStopLen(size_t stop) const;
     std::string getMatch(size_t group) const;
-
-private:
-    int flags;
-    bool ok;
-    bool multiline;
-    regex_t re;
-    size_t priority;
-    size_t nGroups, nMatches;
-    std::string error;
-    std::string pattern;
-    std::string data;
-    std::vector<regmatch_t> matches;
-    std::vector<size_t> stopLen;
-    std::vector<size_t> primaryGroup;
-
-    bool recompile();
 };
