@@ -4,6 +4,7 @@
 #include <wx/vector.h>
 #include <wx/richtext/richtextctrl.h>
 #include <wx/odcombo.h>
+#include <wx/clipbrd.h>
 #include <yajl/yajl_tree.h>
 #include <yajl/yajl_gen.h>
 #include "reggy.h"
@@ -20,6 +21,7 @@
 #define ID_BTN_SAVE     10009
 #define ID_BTN_LOAD     10010
 #define ID_BTN_QUIT     10011
+#define ID_BTN_COPY     10012
 
 class MyFrame;
 
@@ -45,7 +47,7 @@ class MyFrame : public wxFrame {
     friend class MyComboBox;
     wxTextCtrl *inpPattern;
     wxRichTextCtrl *inpData;
-    wxButton *btnClear, *btnLoad, *btnSave, *btnQuit;
+    wxButton *btnClear, *btnLoad, *btnSave, *btnQuit, *btnCopy;
     wxCheckBox *cbMultiline, *cbERE, *cbNL, *cbICase;
     wxVector<wxColor> colors;
     Reggy reggy;
@@ -55,6 +57,7 @@ class MyFrame : public wxFrame {
     void OnBtnLoad(wxCommandEvent &event);
     void OnBtnSave(wxCommandEvent &event);
     void OnBtnQuit(wxCommandEvent &event);
+    void OnBtnCopy(wxCommandEvent &event);
     void OnChangePtrn(wxCommandEvent &event);
     void OnChangeData(wxCommandEvent &event);
     void OnCheckbox(wxCommandEvent &event);

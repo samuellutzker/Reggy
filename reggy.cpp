@@ -8,6 +8,12 @@ bool Reggy::setFlag(int flag, bool value, bool recalc)
     return recalc ? recompile() : true;
 }
 
+bool Reggy::setFlags(int f, bool recalc)
+{
+    flags = f;
+    return recalc ? recompile() : true;
+}
+
 bool Reggy::setMultiline(bool value, bool recalc) {
     multiline = value;
     return recalc ? recompile() : true;
@@ -35,6 +41,11 @@ bool Reggy::setPriority(size_t p, bool recalc)
 bool Reggy::isReady() const
 {
     return ok;
+}
+
+int Reggy::getFlags() const
+{
+    return flags;
 }
 
 size_t Reggy::getPriority() const
@@ -123,8 +134,8 @@ bool Reggy::recompile()
                 for (size_t k = 0; k < nGroups; ++k) {
                     if (i >= matches[k].rm_so && i < matches[k].rm_eo) {
                         next = k;
+                        if (k == priority) break;
                     }
-                    if (k == priority) break;
                 }
                 if (next != group) {
                     if (i - pos > 0) {

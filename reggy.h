@@ -9,6 +9,7 @@ public:
     inline static constexpr size_t NO_GROUP = (size_t)-1;
 
     bool setFlag(int, bool, bool recalc = true);
+    bool setFlags(int, bool recalc = true);
     bool setData(const std::string&, bool recalc = true);
     bool setPattern(const std::string&, bool recalc = true);
     bool setMultiline(bool, bool recalc = true);
@@ -16,6 +17,7 @@ public:
 
     std::string getErrorString() const;
     bool isReady() const;
+    int getFlags() const;
     size_t getPriority() const;
     size_t getGroupCount() const;
     size_t getMatchCount() const;

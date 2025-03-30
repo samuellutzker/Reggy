@@ -3,6 +3,7 @@
 BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(ID_BTN_LOAD, MyFrame::OnBtnLoad)
     EVT_BUTTON(ID_BTN_SAVE, MyFrame::OnBtnSave)
+    EVT_BUTTON(ID_BTN_COPY, MyFrame::OnBtnCopy)
     EVT_BUTTON(ID_BTN_CLEAR, MyFrame::OnBtnClear)
     EVT_BUTTON(ID_BTN_QUIT, MyFrame::OnBtnQuit)
     EVT_TEXT(ID_INP_PTRN, MyFrame::OnChangePtrn)
@@ -120,6 +121,7 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     inpData     = new wxRichTextCtrl(this, ID_INP_DATA, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER  | wxTE_MULTILINE);
     btnLoad     = new wxButton(ctrlPanel, ID_BTN_LOAD, wxString("Load"));
     btnSave     = new wxButton(ctrlPanel, ID_BTN_SAVE, wxString("Save"));
+    btnCopy     = new wxButton(ctrlPanel, ID_BTN_COPY, wxString("Clipboard"));
     btnQuit     = new wxButton(ctrlPanel, ID_BTN_QUIT, wxString("Quit"));
     btnClear    = new wxButton(ctrlPanel, ID_BTN_CLEAR, wxString("Clear"));
     cbMultiline = new wxCheckBox(ctrlPanel, ID_CB_MULTI, wxString("Multiline"));
@@ -132,6 +134,7 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     // Structure the layout with the sizers
     opSizer->Add(btnLoad, 0, wxCENTER | wxALL, 5);
     opSizer->Add(btnSave, 0, wxCENTER | wxALL, 5);
+    opSizer->Add(btnCopy, 0, wxCENTER | wxALL, 5);
     opSizer->Add(comGroups, 1, wxCENTER | wxALL, 5);
     opSizer->Add(btnClear, 0, wxCENTER | wxALL, 5);
     opSizer->Add(btnQuit, 0, wxCENTER | wxALL, 5);
@@ -237,14 +240,17 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     wxFile inputStream(loadFile.GetPath());
 
     wxString jsonSrc;
-    inputStream.ReadAll(&jsonSrc);
+    if (!inputStream.ReadAll(&jsonSrc)) {
+        wxMessageBox("Could not read file.", "File Error", wxOK | wxICON_ERROR);
+        return;
+    }
 
-    // C from here on:
     char error[1024];
     yajl_val node = yajl_tree_parse(jsonSrc.c_str(), error, sizeof(error));
 
     if (!node) {
-        wxLogError("File format not recognized.");
+        wxLogDebug("YAJL parse error. Error: %s. Loading file as data only.", error);
+        inpData->SetValue(jsonSrc);
         return;
     }
     yajl_val result = yajl_tree_get(node, (const char *[]){"pattern", (const char *)0}, yajl_t_string);
@@ -260,6 +266,22 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     } else {
         wxLogDebug("No data found.");
     }
+
+    result = yajl_tree_get(node, (const char *[]){"flags", (const char *)0}, yajl_t_number);
+    if (result) {
+        int flags = YAJL_GET_INTEGER(result);
+        cbERE->SetValue((flags & REG_EXTENDED) != 0);
+        cbNL->SetValue((flags & REG_NEWLINE) != 0);
+        cbICase->SetValue((flags & REG_ICASE) != 0);
+        reggy.setFlags(flags);
+    } else {
+        wxLogDebug("No flags found.");
+    }
+    result = yajl_tree_get(node, (const char *[]){"multiline", (const char *)0}, yajl_t_true);
+    cbMultiline->SetValue(YAJL_IS_TRUE(result));
+    reggy.setMultiline(YAJL_IS_TRUE(result));
+
+    update();
 
     yajl_tree_free(node);
 }
@@ -300,14 +322,38 @@ void MyFrame::OnBtnSave(wxCommandEvent& event)
         wxLogError("YAJL error, could not write data.");
     }
 
+    if (my_yajl("flags") || yajl_gen_integer(yajl, reggy.getFlags())) {
+        wxLogError("YAJL error, could not write flags.");
+    }
+
+    if (cbMultiline->GetValue() && (my_yajl("multiline") || yajl_gen_bool(yajl, true))) {
+        wxLogError("YAJL error, could not write multiline.");
+    }
+
     yajl_gen_map_close(yajl);
     const unsigned char *buf;
     size_t bufsize;
     yajl_gen_get_buf(yajl, &buf, &bufsize);
 
-    outputStream.Write(wxString(buf));
+    if (!outputStream.Write(wxString(buf))) {
+        wxMessageBox("Could not write file.", "File Error", wxOK | wxICON_ERROR);
+    }
 
     yajl_gen_free(yajl);
+}
+
+void MyFrame::OnBtnCopy(wxCommandEvent& event)
+{
+    event.Skip();
+    if (wxTheClipboard->Open())
+    {
+        wxString s = inpPattern->GetValue();
+        s.Replace("\\", "\\\\");
+        wxTheClipboard->SetData(new wxTextDataObject("\"" + s + "\""));
+        wxTheClipboard->Close();
+    } else {
+        wxLogError("Clipboard unavailable.");
+    }
 }
 
 void MyFrame::OnBtnQuit(wxCommandEvent& event)
