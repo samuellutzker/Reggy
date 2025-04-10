@@ -1,6 +1,7 @@
 #include <regex.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 class Reggy {
     int flags;
