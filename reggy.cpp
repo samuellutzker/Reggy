@@ -1,6 +1,6 @@
 #include "reggy.h"
 
-Reggy::Reggy(int _flags) : flags(_flags), multiline(false), ok(false), priority(NO_GROUP) {}
+Reggy::Reggy(int _flags) : flags(_flags), multiline(false), ok(false), priority(NO_GROUP), exclusive(false) {}
 
 bool Reggy::setFlag(int flag, bool value, bool recalc)
 {
@@ -31,10 +31,11 @@ bool Reggy::setPattern(const std::string& p, bool recalc)
     return recalc ? recompile() : true;
 }
 
-bool Reggy::setPriority(size_t p, bool recalc)
+bool Reggy::setPriority(size_t p, bool excl, bool recalc)
 {
     if (p != NO_GROUP && (!ok || p >= nGroups)) return false;
     priority = p;
+    exclusive = excl;
     return recalc ? recompile() : true;
 }
 
@@ -133,7 +134,9 @@ bool Reggy::recompile()
                 size_t next = NO_GROUP;
                 for (size_t k = 0; k < nGroups; ++k) {
                     if (i >= matches[k].rm_so && i < matches[k].rm_eo) {
-                        next = k;
+                        if (!exclusive || k == priority) {
+                            next = k;
+                        }
                         if (k == priority) break;
                     }
                 }

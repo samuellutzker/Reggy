@@ -20,26 +20,42 @@ BEGIN_EVENT_TABLE(MyComboBox, wxOwnerDrawnComboBox)
     EVT_COMBOBOX_CLOSEUP(ID_CO_GROUPS, MyComboBox::OnDropdown)
 END_EVENT_TABLE()
 
+BEGIN_EVENT_TABLE(MyComboPopup, wxVListBoxComboPopup)
+    EVT_MOTION(MyComboPopup::OnMotion)
+    EVT_LEAVE_WINDOW(MyComboPopup::OnMouseLeave)
+END_EVENT_TABLE()
+
+// --- MyComboPopup ----
+
+MyComboPopup::MyComboPopup(MyComboBox *_parent) : parent(_parent) {}
+
+void MyComboPopup::OnMotion(wxMouseEvent &event)
+{
+    size_t n = Reggy::NO_GROUP;
+    if (HitTest(event.GetPosition()) == wxHT_WINDOW_INSIDE) {
+        n = event.GetY() / ITEM_HEIGHT - 1;
+    }
+    parent->setHover(n);
+    event.Skip();
+}
+
+void MyComboPopup::OnMouseLeave(wxMouseEvent &event)
+{
+    parent->setHover(Reggy::NO_GROUP);
+}
+
 // ----- MyComboBox ----
 
-MyComboBox::MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *_mainFrame) : nGroups(0), mainFrame(_mainFrame),
+MyComboBox::MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *_mainFrame) : 
+  nGroups(0), mainFrame(_mainFrame), hover(Reggy::NO_GROUP), selected(Reggy::NO_GROUP),
   wxOwnerDrawnComboBox(parent, id, "Total Groups: 0", wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_READONLY)
 {
-    Append("Total Groups: 0");
     SetCursor(wxCURSOR_HAND);
+    SetPopupControl(new MyComboPopup(this));
+    Append("Total Groups: 0");
 }
 
 MyComboBox::~MyComboBox() {}
-
-void MyComboBox::OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int flags) const
-{
-    bool highlight = IsPopupShown() && GetSelection() == item;
-
-    dc.SetBrush(highlight ? *wxLIGHT_GREY_BRUSH : *wxWHITE_BRUSH);
-    dc.SetPen(*wxTRANSPARENT_PEN);
-    dc.DrawRectangle(rect);
-}
-
 
 void MyComboBox::update()
 {
@@ -57,12 +73,34 @@ void MyComboBox::update()
     }
 }
 
-void MyComboBox::OnComboBox(wxCommandEvent& event) 
+void MyComboBox::setHover(size_t n) {
+    if (n != hover) {
+        hover = n;
+        mainFrame->reggy.setPriority(hover != Reggy::NO_GROUP ? hover : selected, false);
+        mainFrame->update();
+        if (IsPopupShown()) {
+            GetPopupWindow()->Refresh();
+        }
+    }
+}
+
+void MyComboBox::OnComboBox(wxCommandEvent& event)
 {
-    size_t group = (GetSelection() == wxNOT_FOUND || GetSelection() == 0) ? Reggy::NO_GROUP : (GetSelection() - 1);
-    mainFrame->reggy.setPriority(group);
+    selected = (GetSelection() == wxNOT_FOUND || GetSelection() == 0) ? Reggy::NO_GROUP : (GetSelection() - 1);
+    hover = Reggy::NO_GROUP;
+    mainFrame->reggy.setPriority(selected, selected != Reggy::NO_GROUP);
     mainFrame->update();
     event.Skip();
+}
+
+void MyComboBox::OnDrawBackground(wxDC& dc, const wxRect& rect, int item, int flags) const
+{
+    int highlightThis = 1 + (hover != Reggy::NO_GROUP ? hover : selected);
+    bool isHighlight = IsPopupShown() && highlightThis == item;
+
+    dc.SetBrush(isHighlight ? *wxLIGHT_GREY_BRUSH : *wxWHITE_BRUSH);
+    dc.SetPen(*wxTRANSPARENT_PEN);
+    dc.DrawRectangle(rect);
 }
 
 void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) const
@@ -77,7 +115,7 @@ void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) cons
         rect.SetTop(rect.GetTop() + 1);
         rect.SetBottom(rect.GetBottom() - 2);
         rect.SetRight(rect.GetLeft() + 48);
-    
+
         wxColor bgColor = item > 0 ? mainFrame->colors[item-1] : GetBackgroundColour();
         dc.SetBrush(wxBrush(bgColor));
         dc.SetPen(wxPen(*wxBLACK));
@@ -90,7 +128,7 @@ void MyComboBox::OnDrawItem(wxDC &dc, const wxRect &r, int item, int flags) cons
 
 wxCoord MyComboBox::OnMeasureItem(size_t n) const
 {
-    return 26;
+    return MyComboPopup::ITEM_HEIGHT;
 }
 
 void MyComboBox::OnDropdown(wxCommandEvent& event)
@@ -128,9 +166,9 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     cbMultiline = new wxCheckBox(ctrlPanel, ID_CB_MULTI, wxString("Multiline"));
     cbERE       = new wxCheckBox(ctrlPanel, ID_CB_FL_ERE, wxString("REG_EXTENDED"));
     cbICase     = new wxCheckBox(ctrlPanel, ID_CB_FL_ICASE, wxString("REG_ICASE"));
-    cbNL        = new wxCheckBox(ctrlPanel, ID_CB_FL_NL, wxString("REG_NEWLINE"));
+    cbNLine     = new wxCheckBox(ctrlPanel, ID_CB_FL_NL, wxString("REG_NEWLINE"));
     comGroups   = new MyComboBox(ctrlPanel, ID_CO_GROUPS, this);
-    cbNL->Disable();
+    cbNLine->Disable();
 
     // Structure the layout with the sizers
     opSizer->Add(btnLoad, 0, wxCENTER | wxALL, 5);
@@ -144,7 +182,7 @@ MyFrame::MyFrame() : isUpdating(false), reggy(0),
     flagSizer->AddStretchSpacer(1);
     flagSizer->Add(cbERE, 0, wxCENTER | wxALL, 5);
     flagSizer->Add(cbICase, 0, wxCENTER | wxALL, 5);
-    flagSizer->Add(cbNL, 0, wxCENTER | wxALL, 5);
+    flagSizer->Add(cbNLine, 0, wxCENTER | wxALL, 5);
 
     decoSizer->Add(inpPattern, 1, wxEXPAND | wxALL, 5);
     ctrlSizer->Add(decoSizer, 1, wxEXPAND | wxALL, 5);
@@ -236,7 +274,7 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     if (loadFile.ShowModal() == wxID_CANCEL) {
         return;
     }
-    
+
     wxFile inputStream(loadFile.GetPath());
 
     wxString jsonSrc;
@@ -277,7 +315,7 @@ void MyFrame::OnBtnLoad(wxCommandEvent& event)
     if (result) {
         int flags = YAJL_GET_INTEGER(result);
         cbERE->SetValue((flags & REG_EXTENDED) != 0);
-        cbNL->SetValue((flags & REG_NEWLINE) != 0);
+        cbNLine->SetValue((flags & REG_NEWLINE) != 0);
         cbICase->SetValue((flags & REG_ICASE) != 0);
         reggy.setFlags(flags);
     } else {
@@ -302,7 +340,7 @@ void MyFrame::OnBtnSave(wxCommandEvent& event)
     if (saveFile.ShowModal() == wxID_CANCEL) {
         return;
     }
-    
+
     wxFile outputStream(saveFile.GetPath(), wxFile::write);
 
     yajl_gen yajl = NULL;
@@ -318,7 +356,7 @@ void MyFrame::OnBtnSave(wxCommandEvent& event)
     }
 
     auto my_yajl = [&](const char s[]) {
-        return yajl_gen_string(yajl, (const unsigned char *)s, strlen(s));        
+        return yajl_gen_string(yajl, (const unsigned char *)s, strlen(s));
     };
 
     if (my_yajl("pattern") || my_yajl(inpPattern->GetValue().c_str())) {
@@ -374,13 +412,13 @@ void MyFrame::OnCheckbox(wxCommandEvent& event)
     switch (event.GetId()) {
         case    ID_CB_FL_ERE : reggy.setFlag(REG_EXTENDED, cbERE->GetValue()); break;
         case  ID_CB_FL_ICASE : reggy.setFlag(REG_ICASE, cbICase->GetValue()); break;
-        case     ID_CB_FL_NL : reggy.setFlag(REG_NEWLINE, cbNL->GetValue()); break;
+        case     ID_CB_FL_NL : reggy.setFlag(REG_NEWLINE, cbNLine->GetValue()); break;
         case     ID_CB_MULTI :
             reggy.setMultiline(cbMultiline->GetValue());
             if (cbMultiline->GetValue())
-                cbNL->Enable();
+                cbNLine->Enable();
             else
-                cbNL->Disable();
+                cbNLine->Disable();
             update();
             break;
     }

@@ -7,6 +7,7 @@ class Reggy {
     int flags;
     bool ok;
     bool multiline;
+    bool exclusive;
     regex_t re;
     size_t priority;
     size_t nGroups, nMatches;
@@ -29,7 +30,7 @@ public:
     bool setData(const std::string&, bool recalc = true);
     bool setPattern(const std::string&, bool recalc = true);
     bool setMultiline(bool, bool recalc = true);
-    bool setPriority(size_t, bool recalc = true);
+    bool setPriority(size_t, bool exclusive = false, bool recalc = true);
 
     std::string getErrorString() const;
     bool isReady() const;

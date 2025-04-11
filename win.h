@@ -23,11 +23,25 @@
 #define ID_BTN_QUIT     10011
 #define ID_BTN_COPY     10012
 
+class MyComboBox;
 class MyFrame;
+
+class MyComboPopup : public wxVListBoxComboPopup {
+    MyComboBox *parent;
+    void OnMotion(wxMouseEvent &event);
+    void OnMouseLeave(wxMouseEvent &event);
+public:
+    inline static constexpr int ITEM_HEIGHT = 26;
+    MyComboPopup(MyComboBox *parent);
+
+    wxDECLARE_EVENT_TABLE();
+};
 
 class MyComboBox : public wxOwnerDrawnComboBox {
     MyFrame *mainFrame;
     size_t nGroups;
+    size_t hover;
+    size_t selected;
 
     void OnDrawItem (wxDC &dc, const wxRect &rect, int item, int flags) const override;
     void OnDrawBackground(wxDC &dc, const wxRect &rect, int item, int flags) const override;
@@ -36,9 +50,10 @@ class MyComboBox : public wxOwnerDrawnComboBox {
     wxCoord OnMeasureItem(size_t n) const override;
 
 public:
-    MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *frame);
+    MyComboBox(wxWindow *parent, wxWindowID id, MyFrame *mainFrame);
     ~MyComboBox(void);
     void update(void);
+    void setHover(size_t n);
 
     wxDECLARE_EVENT_TABLE();
 };
@@ -48,7 +63,7 @@ class MyFrame : public wxFrame {
     wxTextCtrl *inpPattern;
     wxRichTextCtrl *inpData;
     wxButton *btnClear, *btnLoad, *btnSave, *btnQuit, *btnCopy;
-    wxCheckBox *cbMultiline, *cbERE, *cbNL, *cbICase;
+    wxCheckBox *cbMultiline, *cbERE, *cbNLine, *cbICase;
     wxVector<wxColor> colors;
     Reggy reggy;
     bool isUpdating;
