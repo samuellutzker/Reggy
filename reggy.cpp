@@ -8,9 +8,9 @@ bool Reggy::setFlag(int flag, bool value, bool recalc)
     return recalc ? recompile() : true;
 }
 
-bool Reggy::setFlags(int f, bool recalc)
+bool Reggy::setFlags(int _flags, bool recalc)
 {
-    flags = f;
+    flags = _flags;
     return recalc ? recompile() : true;
 }
 
@@ -19,23 +19,23 @@ bool Reggy::setMultiline(bool value, bool recalc) {
     return recalc ? recompile() : true;
 }
 
-bool Reggy::setData(const std::string& d, bool recalc)
+bool Reggy::setData(const std::string& _data, bool recalc)
 {
-    data = d;
+    data = _data;
     return recalc ? recompile() : true;
 }
 
-bool Reggy::setPattern(const std::string& p, bool recalc)
+bool Reggy::setPattern(const std::string& _pattern, bool recalc)
 {
-    pattern = p;
+    pattern = _pattern;
     return recalc ? recompile() : true;
 }
 
-bool Reggy::setPriority(size_t p, bool excl, bool recalc)
+bool Reggy::setPriority(size_t group, bool _exclusive, bool recalc)
 {
-    if (p != NO_GROUP && (!ok || p >= nGroups)) return false;
-    priority = p;
-    exclusive = excl;
+    if (group != NO_GROUP && (!ok || group >= nGroups)) return false;
+    priority = group;
+    exclusive = _exclusive;
     return recalc ? recompile() : true;
 }
 
@@ -54,7 +54,6 @@ size_t Reggy::getPriority() const
     return priority;
 }
 
-
 size_t Reggy::getGroupCount() const
 {
     return ok ? nGroups : 0;
@@ -63,13 +62,6 @@ size_t Reggy::getGroupCount() const
 size_t Reggy::getMatchCount() const
 {
     return ok ? nMatches : 0;
-}
-
-std::string Reggy::getMatch(size_t group) const
-{
-    if (ok && group == NO_GROUP) return data;
-    if (group >= matches.size() || matches[group].rm_so < 0) return "";
-    return data.substr(matches[group].rm_so, matches[group].rm_eo - matches[group].rm_so);
 }
 
 size_t Reggy::getPrimaryGroup(size_t stop) const
